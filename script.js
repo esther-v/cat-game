@@ -25,20 +25,6 @@ function setPixelToWorldScale(){
 setPixelToWorldScale()
 window.addEventListener('resize', setPixelToWorldScale)
 
-//start the game
-document.addEventListener("keydown", handleStart, {once: true})
-
-function handleStart() {
-    lastTime = null
-    speedScale = 1
-    score = 0
-    setupGround()
-    setupCat() 
-    setupCactus()
-    startScreenElem.classList.add("hide")
-    window.requestAnimationFrame(update)
-}
-
 //update custom property
 function getCustomProperty(elem, prop) {
     return parseFloat(getComputedStyle(elem).getPropertyValue(prop)) || 0
@@ -50,25 +36,6 @@ function setCustomProperty(elem, prop, value) {
 
 function incrementCustomProperty(elem, prop, inc) {
     setCustomProperty(elem, prop, getCustomProperty(elem, prop) + inc)
-}
-
-//update the game, make the moves
-function update(time) {
-    if(lastTime == null) {
-        lastTime = time
-        window.requestAnimationFrame(update)
-        return
-    }
-    const delta = time - lastTime
-
-    updateGround(delta, speedScale)
-    updateCat(delta, speedScale)
-    updateCactus(delta, speedScale)
-    updateSpeedScale(delta)
-    updateScore(delta)
-
-    lastTime = time
-    window.requestAnimationFrame(update)
 }
 
 function updateSpeedScale(delta) {
@@ -162,36 +129,115 @@ function  onJump(e) {
     isJumping = true
 }
 
-//update cactus
-const CACTUS_INTERVAL_MIN = 500
-const CACTUS_INTERVAL_MAX = 2000
-let nextCactusTime
+//update sapin
+const SAPIN_INTERVAL_MIN = 500
+const SAPIN_INTERVAL_MAX = 2000
+let nextSapinTime
 
-function setupCactus() {
-    nextCactusTime = CACTUS_INTERVAL_MIN
-}
-
-function updateCactus(delta, speedScale) {
-    document.querySelectorAll("[data-cactus]").forEach(cactus => {
-        incrementCustomProperty(cactus, "--left", delta * speedScale * SPEED * -1)
+function setupSapin() {
+    nextSapinTime = SAPIN_INTERVAL_MIN
+    document.querySelectorAll("[data-sapin]").forEach(sapin => {
+        sapin.remove()
     })
-    if (nextCactusTime <= 0) {
-        createCactus()
-        nextCactusTime = randomNumberBetween(CACTUS_INTERVAL_MIN, CACTUS_INTERVAL_MAX) / speedScale
-    }
-    nextCactusTime -= delta
 }
 
-function createCactus() {
-    const cactus = document.createElement("img")
-    cactus.dataset.cactus = true
-    cactus.src = "img/cactus.png"
-    cactus.classList.add("cactus")
-    setCustomProperty(cactus, "--left", 100)
-    worldEl.append(cactus)
+function updateSapin(delta, speedScale) {
+    document.querySelectorAll("[data-sapin]").forEach(sapin => {
+        incrementCustomProperty(sapin, "--left", delta * speedScale * SPEED * -1)
+        if(getCustomProperty(sapin, "--left") <= -100) {
+            sapin.remove()
+        }
+    })
+    if (nextSapinTime <= 0) {
+        createSapin()
+        nextSapinTime = randomNumberBetween(SAPIN_INTERVAL_MIN, SAPIN_INTERVAL_MAX) / speedScale
+    }
+    nextSapinTime -= delta
+}
+
+function createSapin() {
+    const sapin = document.createElement("img")
+    sapin.dataset.sapin = true
+    sapin.src = "img/sapin2.png"
+    sapin.classList.add("sapin")
+    sapin.style.height = '20%'
+    setCustomProperty(sapin, "--left", 100)
+    worldEl.append(sapin)
 }
 
 function randomNumberBetween(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
+//start the game
+document.addEventListener("keydown", handleStart, {once: true})
+
+function handleStart() {
+    lastTime = null
+    speedScale = 1
+    score = 0
+    setupGround()
+    setupCat() 
+    setupSapin()
+    startScreenElem.classList.add("hide")
+    window.requestAnimationFrame(update)
+}
+
+//update the game, make the moves
+function update(time) {
+    if(lastTime == null) {
+        lastTime = time
+        window.requestAnimationFrame(update)
+        return
+    }
+    const delta = time - lastTime
+
+    updateGround(delta, speedScale)
+    updateCat(delta, speedScale)
+    updateSapin(delta, speedScale)
+    updateSpeedScale(delta)
+    updateScore(delta)
+
+    if(checkLose()) return handleLose()
+
+    lastTime = time
+    window.requestAnimationFrame(update)
+}
+
+//losing, check if the cat touch the tree
+
+function getSapinRects() {
+    return [...document.querySelectorAll("[data-sapin]")].map(sapin => {
+        return sapin.getBoundingClientRect()
+    })
+}
+
+function getCatRect() {
+    return catElem.getBoundingClientRect()
+}
+
+function isCollision(rect1, rect2) {
+    return (
+        rect1.left < rect2.right && 
+        rect1.top < rect2.bottom && 
+        rect1.right > rect2.left && 
+        rect1.bottom > rect2.top
+    )
+}
+
+function checkLose() {
+    const catRect = getCatRect()
+    return getSapinRects().some(rect => isCollision(rect, catRect))
+}
+
+function setCatLose() {
+    catElem.src = "img/cat-lose.png"
+}
+
+function handleLose() {
+    setCatLose()
+    setTimeout(() => {
+        document.addEventListener("keydown", handleStart, { once: true})
+        startScreenElem.classList.remove("hide")
+    }, 100)
+}

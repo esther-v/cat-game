@@ -9,6 +9,7 @@ body{
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    background: #dfe6e9;
 }
 
 .world{
@@ -47,11 +48,11 @@ body{
     --bottom: 0;
     position: absolute;
     left: 1%;
-    height: 30%;
+    height: 20%;
     bottom: calc(var(--bottom) * 1%);
 }
 
-.tree{
+.sapin{
     position: absolute;
     left: calc(var(--left) * 1%);
     height: 30%;
